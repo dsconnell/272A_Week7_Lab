@@ -7,6 +7,110 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(sp)
+library(raster)
+#library(rgdal)
+library(leaflet)
 ```
+
+https://hughst.github.io/week-1/
+
+```{r}
+ETH_malaria_data <- read.csv("https://raw.githubusercontent.com/HughSt/HughSt.github.io/master/course_materials/week1/Lab_files/Data/mal_data_eth_2009_no_dups.csv", header=T)
+```
+
+```{r}
+# gives you the first few rows
+head()
+```
+
+```{r}
+# Create a histogram of the prevalence
+hist()
+```
+
+```{r}
+# use R’s base graphics to plot points, treating them like any other data with x and y coordinates
+plot(xcolumn, ycolumn, ylab = "Latitude", xlab="Longitude")
+```
+
+```{r}
+# Use the cex function to plot circle size as a function of a variable
+plot(xcolumn, ycolumn,
+     cex = prevcolumn * 10,
+     ylab = "Latitude", xlab="Longitude")
+```
+
+```{r}
+# spatial data up into a ‘Spatial’ class of object using the sp package
+ETH_malaria_data_SPDF <- 
+    SpatialPointsDataFrame(coords = ETH_malaria_data[,c("longitude", "latitude")],
+                           data = ETH_malaria_data[,c("examined", "pf_pos", "pf_pr")],
+                           proj4string = CRS("+init=epsg:4326")) # sets the projection to WGS 1984 using lat/long. Optional but good to specify
+
+# Summary of object
+ETH_malaria_data_SPDF
+```
+
+```{r}
+# SPDFs partition data elements, e.g. the coordinates are stored separately from the data
+head(ETH_malaria_data_SPDF@coords)
+```
+
+```{r}
+head(ETH_malaria_data_SPDF@data)
+```
+
+```{r}
+# You can use the plot or spplot function to get quick plots
+plot()
+```
+
+```{r}
+spplot(ETH_malaria_data_SPDF, zcol = "pf_pr")
+```
+
+```{r}
+# admin boundary data is accessible using the getData function from the raster package
+# You first need the ISO3 codes for the country of interest. You can access these using `ccodes()`. For Ethiopia, the ISO3 is ETH.
+ETH_Adm_1 <- raster::getData("GADM", country="ETH", level=1) 
+```
+```{r}
+plot(ETH_Adm_1)
+```
+
+```{r}
+# Plot both country and data points
+plot(ETH_Adm_1)
+points(ETH_malaria_data$longitude, ETH_malaria_data$latitude,
+     cex = ETH_malaria_data$pf_pr * 10,
+     ylab = "Latitude", xlab="Longitude",
+     col="red")
+```
+
+```{r}
+# create webmaps using the leaflet package
+# Define your basemap
+basemap <- leaflet() %>% addTiles()
+basemap
+```
+
+```{r}
+# use the ‘piping’ command %>% to add layers. As our point and polygon data are already ‘Spatial’ object this is easy
+basemap %>% addPolygons(data=ETH_Adm_1)
+```
+
+```{r}
+# add points as well
+basemap %>% addPolygons(data=ETH_Adm_1, weight = 2,
+                        popup = ETH_Adm_1$NAME_1) %>%
+            addCircleMarkers(data=ETH_malaria_data_SPDF,
+                             color="red", radius = 2)
+```
+
+
+
+
+
 
 
